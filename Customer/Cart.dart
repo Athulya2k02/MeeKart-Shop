@@ -1,73 +1,120 @@
-import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 
 class OrderHistoryPage extends StatefulWidget {
-  const OrderHistoryPage({super.key});
-
   @override
   _OrderHistoryPageState createState() => _OrderHistoryPageState();
 }
 
 class _OrderHistoryPageState extends State<OrderHistoryPage> {
-  List<dynamic> customers = [];
-  String? selectedCustomerId;
-  List<dynamic> orders = [];
-  bool isLoading = false;
+  final String apiUrlOrders = "https://localhost:7233/api/Order";
+  final String apiUrlProducts = "https://localhost:7233/api/Product";
 
-  int? selectedProductId;
-  int productQuantity = 1;
-  double netTotal = 0.0;
-  DateTime? selectedDate;
-  int? editingProductIndex;
+  List orders = [];
+  List products = [];
+  int? editingOrderId;
+  List<Map<String, dynamic>> editingOrderProducts = [];
+  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    fetchCustomers();
-    selectedDate = DateTime.now();
+    fetchOrderHistory();
+    fetchProducts();
   }
 
-  Future<void> fetchCustomers() async {
+  Future<void> fetchOrderHistory() async {
     try {
-      final response =
-          await http.get(Uri.parse('https://localhost:7233/api/Customer'));
+      setState(() {
+        isLoading = true;
+      });
+
+      final response = await http.get(Uri.parse(apiUrlOrders));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
         setState(() {
-          customers = data;
+          orders = json.decode(response.body) ?? [];
         });
       } else {
-        throw Exception('Failed to load customers');
+        showErrorSnackBar("Error fetching orders: ${response.statusCode}");
       }
     } catch (e) {
-      showErrorSnackBar('Error fetching customers: $e');
-    }
-  }
-
-  Future<void> fetchOrders(String customerId) async {
-    setState(() {
-      isLoading = true;
-    });
-    try {
-      final response = await http.get(Uri.parse(
-          'https://localhost:7233/api/Order/bycustomer/${customerId}'));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          orders = data;
-        });
-      } else {
-        throw Exception('Failed to load orders');
-      }
-    } catch (e) {
-      showErrorSnackBar('Error fetching orders: $e');
+      showErrorSnackBar("Error: $e");
     } finally {
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> fetchProducts() async {
+    try {
+      final response = await http.get(Uri.parse(apiUrlProducts));
+      if (response.statusCode == 200) {
+        setState(() {
+          products = json.decode(response.body) ?? [];
+        });
+      } else {
+        showErrorSnackBar("Error fetching products: ${response.statusCode}");
+      }
+    } catch (e) {
+      showErrorSnackBar("Error: $e");
+    }
+  }
+
+  void startEditingOrder(int orderId, List<dynamic> orderProducts) {
+    setState(() {
+      editingOrderId = orderId;
+      editingOrderProducts = orderProducts
+          .map<Map<String, dynamic>>((product) => {
+                "Prod_id": product["Prod_id"],
+                "Name": product["Name"],
+                "Qty": product["Qty"],
+                "Price": product["Price"],
+                "Total": product["Total"],
+                "Stock": product["Stock"],
+              })
+          .toList();
+    });
+  }
+
+  void updateProductQuantity(int index, int delta) {
+    setState(() {
+      final product = editingOrderProducts[index];
+      int updatedQty = product["Qty"] + delta;
+
+      if (updatedQty > 0 && updatedQty <= product["Stock"]) {
+        editingOrderProducts[index]["Qty"] = updatedQty;
+        editingOrderProducts[index]["Total"] =
+            updatedQty * (product["Price"] ?? 0);
+      } else {
+        showErrorSnackBar("Invalid quantity. Check stock availability.");
+      }
+    });
+  }
+
+  Future<void> saveUpdatedOrder() async {
+    if (editingOrderId == null) return;
+
+    try {
+      final response = await http.put(
+        Uri.parse("$apiUrlOrders/$editingOrderId"),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode(editingOrderProducts),
+      );
+
+      if (response.statusCode == 200) {
+        showSuccessSnackBar("Order updated successfully!");
+        setState(() {
+          editingOrderId = null;
+          editingOrderProducts = [];
+        });
+        fetchOrderHistory(); // Refresh order history
+      } else {
+        showErrorSnackBar("Error updating order: ${response.statusCode}");
+      }
+    } catch (e) {
+      showErrorSnackBar("Error: $e");
     }
   }
 
@@ -87,134 +134,88 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Order History', style: TextStyle(color: Colors.white)),
+        title: const Text("Order History", style: TextStyle(color: Colors.white)),
         backgroundColor: const Color.fromARGB(255, 2, 0, 16),
-        elevation: 8,
       ),
-      body: GestureDetector(
-        onHorizontalDragEnd: (details) {
-          if (details.primaryVelocity! < 0) {
-            Navigator.pop(context);
-          }
-        },
-        child: Stack(
-          children: [
-            Opacity(
-              opacity: 0.2,
-              child: Image.network(
-                'https://png.pngtree.com/thumb_back/fh260/background/20240327/pngtree-supermarket-aisle-with-empty-shopping-cart-at-grocery-store-retail-business-image_15646095.jpg',
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Center(
-                    child: Text(
-                      'Background image failed to load',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  );
-                },
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color.fromARGB(255, 199, 192, 237),
+                    Color.fromARGB(255, 255, 255, 255),
+                  ],
+                ),
               ),
-            ),
-            Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: DropdownButtonFormField<String>(
-                    decoration: InputDecoration(
-                      labelText: 'Select Customer',
-                      labelStyle: const TextStyle(color: Colors.teal),
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.8),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color:Color.fromARGB(255, 2, 0, 16),),
-                      ),
-                    ),
-                    value: selectedCustomerId,
-                    items: customers.isNotEmpty
-                        ? customers
-                            .map<DropdownMenuItem<String>>((customer) =>
-                                DropdownMenuItem(
-                                  value: customer['id'].toString(),
-                                  child: Text(customer['cust_Name']),
-                                ))
-                            .toList()
-                        : [],
-                    onChanged: (value) {
-                      if (value != selectedCustomerId) {
-                        setState(() {
-                          selectedCustomerId = value;
-                        });
-                        if (value != null) {
-                          fetchOrders(value);
-                        }
-                      }
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : orders.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No orders found',
-                                style: TextStyle(color: Colors.teal, fontSize: 18),
-                              ),
-                            )
-                          : ListView.builder(
-                              itemCount: orders.length,
-                              itemBuilder: (context, index) {
-                                final order = orders[index];
-                                return Card(
-                                  margin: const EdgeInsets.all(8.0),
-                                  color: Colors.teal[50],
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  elevation: 8,
-                                  child: ListTile(
-                                    title: Text(
-                                      'Order ID: ${order['orderId']}',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.teal[700]),
-                                    ),
-                                    subtitle: Text(
-                                      'Date: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(order['orderDate']))}',
-                                      style: TextStyle(color: Colors.teal[600]),
-                                    ),
-                                    trailing: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          'Total: \$${order['netTotal']}',
-                                          style: TextStyle(
-                                              color: Colors.teal[800],
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          'Price: \$${order['productPrice']}',
-                                          style: TextStyle(color: Colors.teal[600]),
-                                        ),
-                                        Text(
-                                          'Qty: ${order['productQuantity']}',
-                                          style: TextStyle(color: Colors.teal[500]),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
+              child: editingOrderId == null
+                  ? ListView.builder(
+                      itemCount: orders.length,
+                      itemBuilder: (context, index) {
+                        final order = orders[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          child: ListTile(
+                            title: Text(
+                                "Order ID: ${order["id"]} - Total: \$${order["Total"]}"),
+                            subtitle: Text(
+                                "Customer: ${order["Cust_name"]} - Date: ${order["Date"]}"),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.teal),
+                              onPressed: () => startEditingOrder(
+                                  order["id"], order["OrderProducts"]),
                             ),
-                ),
-              ],
+                          ),
+                        );
+                      },
+                    )
+                  : Column(
+                      children: [
+                        const Text(
+                          "Edit Order",
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        Expanded(
+                        child: ListView.builder(
+                        itemCount: editingOrderProducts.length,
+                        itemBuilder: (context, index) {
+                        final product = editingOrderProducts[index];
+                        return Card(
+                        child: ListTile(
+                        title: Text(product["Name"]),
+                        subtitle: Text(
+                       "Price: \$${product["Price"]}, Total: \$${product["Total"]}"),
+                         trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                         children: [
+                        IconButton(
+                        icon: const Icon(Icons.remove),
+                        onPressed: () =>
+                        updateProductQuantity(index, -1),
+                         ),
+                         Text("${product["Qty"]}"),
+                         IconButton(
+                         icon: const Icon(Icons.add),
+                        onPressed: () =>
+                        updateProductQuantity(index, 1),
+                             ),
+                            ],
+                           ),
+                          ),
+                         );
+                      },
+                   ),
+               ),
+                        ElevatedButton(
+                          onPressed: saveUpdatedOrder,
+                          child: const Text("Save Changes"),
+                        ),
+                      ],
+                    ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }
