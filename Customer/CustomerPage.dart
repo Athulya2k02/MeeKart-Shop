@@ -154,7 +154,7 @@ class MenuCardPage extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) =>  const ViewCustomerPage()),
+                MaterialPageRoute(builder: (context) =>  const HomePage()),
               );
             },
           ),
