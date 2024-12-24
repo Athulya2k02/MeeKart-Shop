@@ -21,11 +21,11 @@ class _StockPageState extends State<StockPage> {
     try {
       final response = await http.get(Uri.parse("https://localhost:7233/api/Product"));
       if (response.statusCode == 200) {
-        var responseBody = json.decode(response.body);
-        setState(() {
-          products = responseBody;
-          filteredProducts = products;
-          isLoading = false;
+       var responseBody = json.decode(response.body);
+       setState(() {
+        products = responseBody;
+        filteredProducts = products;
+        isLoading = false;
         });
       } else {
         showErrorSnackBar("Error fetching products: ${response.statusCode}");
@@ -142,10 +142,10 @@ class _StockPageState extends State<StockPage> {
 
       if (response.statusCode == 200) {
         setState(() {
-          final index = products.indexWhere((p) => p['id'] == productId);
-          if (index != -1) {
-            products[index]['stock'] = updatedStock;
-            filterProducts(searchController.text);
+        final index = products.indexWhere((p) => p['id'] == productId);
+       if (index != -1) {
+       products[index]['stock'] = updatedStock;
+       filterProducts(searchController.text);
           }
         });
         ScaffoldMessenger.of(context).showSnackBar(
@@ -165,23 +165,23 @@ class _StockPageState extends State<StockPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Product Catalog', style: TextStyle(color: Colors.white),),
-        backgroundColor: const Color.fromARGB(255, 2, 0, 16),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: SizedBox(
-              width: screenWidth > 600 ? 300 : 200,
-              child: TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search products...',
-                  prefixIcon: const Icon(Icons.search, color: Color.fromARGB(255, 2, 0, 16),),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  filled: true,
-                  fillColor: const Color.fromARGB(255, 253, 255, 254),
+      title: const Text('Product Catalog', style: TextStyle(color: Colors.white),),
+      backgroundColor: const Color.fromARGB(255, 2, 0, 16),
+      actions: [
+      Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: SizedBox(
+      width: screenWidth > 600 ? 300 : 200,
+      child: TextField(
+      controller: searchController,
+      decoration: InputDecoration(
+      hintText: 'Search products...',
+      prefixIcon: const Icon(Icons.search, color: Color.fromARGB(255, 2, 0, 16),),
+      border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(25),
+      ),
+      filled: true,
+      fillColor: const Color.fromARGB(255, 253, 255, 254),
                 ),
               ),
             ),
@@ -189,9 +189,9 @@ class _StockPageState extends State<StockPage> {
         ],
       ),
        body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
+       decoration: const BoxDecoration(
+        gradient: LinearGradient(
+        colors: [
               Color.fromARGB(255, 255, 255, 255),
               Color.fromARGB(255, 8, 1, 52)
             ],
@@ -200,10 +200,10 @@ class _StockPageState extends State<StockPage> {
           ),
         ),
       child: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color.fromARGB(255, 8, 1, 52)))
-          : filteredProducts.isEmpty
-              ? const Center(
-                  child: Text(
+      ? const Center(child: CircularProgressIndicator(color: Color.fromARGB(255, 8, 1, 52)))
+      : filteredProducts.isEmpty? 
+      const Center(
+      child: Text(
                     "No products found",
                     style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
@@ -213,75 +213,75 @@ class _StockPageState extends State<StockPage> {
                     int crossAxisCount = screenWidth > 1200 ? 4
                         : screenWidth > 800 ? 3 : 2;
 
-                    return GridView.builder(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.75,
+        return GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.75,
                       ),
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filteredProducts.length,
-                      itemBuilder: (context, index) {
-                        var product = filteredProducts[index];
-                        String imageUrl = getProductImage(product['prod_name']);
+        padding: const EdgeInsets.all(16),
+        itemCount: filteredProducts.length,
+        itemBuilder: (context, index) {
+        var product = filteredProducts[index];
+        String imageUrl = getProductImage(product['prod_name']);
 
-                        return Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
+        return Card(
+        shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
                           ),
-                          color: const Color.fromARGB(255, 242, 241, 244),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ClipRRect(
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                                child: Image.network(
-                                  imageUrl,
-                                  height: constraints.maxWidth / crossAxisCount * 0.5,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(Icons.error, size: 50);
+        color: const Color.fromARGB(255, 242, 241, 244),
+        child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+         children: [
+                     ClipRRect(
+                     borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                     child: Image.network(
+                     imageUrl,
+                     height: constraints.maxWidth / crossAxisCount * 0.5,
+                     width: double.infinity,
+                     fit: BoxFit.cover,
+                     errorBuilder: (context, error, stackTrace) {
+                     return const Icon(Icons.error, size: 50);
                                   },
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  product['prod_name'],
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: screenWidth > 600 ? 18 : 14,
-                                    color: Color.fromARGB(255, 8, 1, 52)
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
+                     Padding(
+                     padding: const EdgeInsets.all(8.0),
+                     child: Text(
+                     product['prod_name'],
+                    style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: screenWidth > 600 ? 18 : 14,
+                    color: Color.fromARGB(255, 8, 1, 52)
+                            ),
+                     overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                child: Text(
-                                  'MRP: ₹${product['mrp']}',
-                                  style: const TextStyle(color: Colors.grey),
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Text(
+                              'MRP: ₹${product['mrp']}',
+                               style: const TextStyle(color: Colors.grey),
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                               padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                Text(
                                       'Stock: ${product['stock']}',
                                       style: TextStyle(
                                         color: product['stock'] > 0 ? Colors.green : Colors.red,
                                       ),
                                     ),
                                     ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Color.fromARGB(255, 8, 1, 52)
+                                    style: ElevatedButton.styleFrom(
+                                    backgroundColor: Color.fromARGB(255, 8, 1, 52)
                                       ),
                                       onPressed: () {
-                                        updateStock(product['id'], product['stock']);
+                                      updateStock(product['id'], product['stock']);
                                       },
                                       child: Text(product['stock'] > 0 ? "Buy" : "Out of Stock"),
                                     ),
