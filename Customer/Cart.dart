@@ -109,7 +109,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           editingOrderId = null;
           editingOrderProducts = [];
         });
-        fetchOrderHistory(); // Refresh order history
+        fetchOrderHistory(); 
       } else {
         showErrorSnackBar("Error updating order: ${response.statusCode}");
       }
@@ -202,20 +202,20 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         onPressed: () =>
                         updateProductQuantity(index, 1),
                              ),
-                            ],
-                           ),
-                          ),
-                         );
-                      },
-                   ),
-               ),
+                          ],
+                       ),
+                     ),
+                   );
+                 },
+              ),
+            ),
                         ElevatedButton(
                           onPressed: saveUpdatedOrder,
                           child: const Text("Save Changes"),
-                        ),
-                      ],
-                    ),
-            ),
+                     ),
+               ],
+          ),
+       ),
     );
   }
 }
